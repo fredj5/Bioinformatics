@@ -3,7 +3,6 @@ from Bio.Align import substitution_matrices
 import numpy as np
 import random
 import matplotlib.pyplot as plt
-from Bio.Align.Applications import MuscleCommandline
 
 
 # Data retrieval and handling #
