@@ -88,47 +88,37 @@ def mutate(alignment, mutation_rate):
 def replace_population(old_population, new_population):
     return new_population
 
+def elite_selection(population, fitnesses, elite_size):
+    sorted_population = [x for _, x in sorted(zip(fitnesses, population), key=lambda pair: pair[0], reverse=True)]
+    return sorted_population[:elite_size]
+
 # Main GA loop
-def run_genetic_algorithm(sequences, population_size=100, num_generations=1000, mutation_rate=0.1):
+def run_genetic_algorithm(sequences, population_size=100, num_generations=1000, mutation_rate=0.1, elite_size=5):
     # Generate initial population
     population = generate_initial_population(sequences, population_size)
+    best_fitness_over_time = []
+    previous_best_fitness = None
     
     for generation in range(num_generations):
-        # Calculate fitness for each alignment in the population
         fitnesses = [calculate_fitness(alignment) for alignment in population]
+        current_best_fitness = max(fitnesses)
+        best_fitness_over_time.append(current_best_fitness)
         
-        # Select alignments based on fitness
+        
+        previous_best_fitness = current_best_fitness
+        elite = elite_selection(population, fitnesses, elite_size)
         selected_population = roulette_wheel_selection(population, fitnesses)
+        new_population = elite
         
-        # Form new population
-        new_population = []
-        for i in range(0, len(selected_population), 2):
+        for i in range(0, len(selected_population) - elite_size, 2):
             parent1, parent2 = selected_population[i], selected_population[i + 1]
             child1, child2 = crossover(parent1, parent2)
             new_population.extend([mutate(child1, mutation_rate), mutate(child2, mutation_rate)])
         
-        # Replace old population with new population
         population = replace_population(population, new_population)
     
-    # Find the best alignment
     best_alignment = max(population, key=calculate_fitness)
-    return best_alignment, fitnesses
-
-# Function to calculate the total alignment score
-def calculate_alignment_score(alignment):
-    substitution_matrix = substitution_matrices.load('BLOSUM62')
-    score = 0
-    alignment_length = len(alignment[0])
-    
-    for i in range(alignment_length):
-        column = [seq[i] for seq in alignment if i < len(seq)]
-        for j in range(len(column) - 1):
-            for k in range(j + 1, len(column)):
-                if column[j] != '-' and column[k] != '-':
-                    score += substitution_matrix[column[j], column[k]]
-                elif column[j] == '-' or column[k] == '-':
-                    score -= 1  # Penalty for gaps, adjust this value as needed
-    return score
+    return best_alignment, best_fitness_over_time
 
 # Function to measure column conservation
 def calculate_column_conservation(alignment):
@@ -144,24 +134,21 @@ def calculate_column_conservation(alignment):
     return conservation_scores
 
 # Function to visualize the alignments
-def plot_fitnesses(fitnesses):
-    # Find the maximum length of the inner lists
-    generations = list(range(len(fitnesses)))
+def plot_fitnesses(fitness_over_time):
+    generations = list(range(len(fitness_over_time)))
     
     plt.figure(figsize=(14, 10))
-    plt.plot(generations, fitnesses, marker='o', linestyle='-', color='b')
+    plt.plot(generations, fitness_over_time, marker='o', linestyle='-', color='b')
     plt.title('Fitness Over Generations')
     plt.xlabel('Generation')
     plt.ylabel('Fitness')
     plt.grid(True)
     plt.show()
-    
-    plt.show()
 
 # Evaluate the GA performance
 def evaluate_ga_performance(best_alignment, fitnesses):
     # Calculate the total alignment score
-    total_score = calculate_alignment_score(best_alignment)
+    total_score = calculate_fitness(best_alignment)
     print("Total Alignment Score:", total_score)
     
     
@@ -186,17 +173,15 @@ clustalw_alignment = read_clustalw_alignment(clustalw_output_file)
 clustalw_alignment_list = convert_alignment_to_list(clustalw_alignment)
 
 # Calculate the SP score for ClustalW alignment
-clustalw_sp_score = calculate_alignment_score(clustalw_alignment_list)
+clustalw_sp_score = calculate_fitness(clustalw_alignment_list)
 print(f"SP Score for ClustalW Alignment: {clustalw_sp_score}")
 
 
 # Fetch sequences from GenBank
 sequences = fetch_sequences_from_genbank(accession_numbers)
 
-
-
 # Run GA for MSA with fetched sequences and evaluate performance
-best_alignment, fitnesses = run_genetic_algorithm(sequences, population_size=1000, num_generations=1000, mutation_rate=0.05)
+best_alignment, fitnesses = run_genetic_algorithm(sequences, population_size=200, num_generations=2000, mutation_rate=0.1)
 best_alignment_list = ["".join(seq) for seq in best_alignment]
 
 
