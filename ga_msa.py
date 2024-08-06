@@ -161,20 +161,34 @@ def read_clustalw_alignment(output_file):
     aligned_sequences = [str(record.seq) for record in alignment]
     return aligned_sequences
 
+# Function to read MUSCLE alignment
+def read_muscle_alignment(output_file):
+    alignment = AlignIO.read(output_file, "fasta")
+    aligned_sequences = [str(record.seq) for record in alignment]
+    return aligned_sequences
+
 # Convert alignment to list format
 def convert_alignment_to_list(alignment):
     return [list(seq) for seq in alignment]
 
 # Path to your ClustalW output file
 clustalw_output_file = "clustal.fasta"
+muscle_output = "muscle_aln.fasta"
 
 # Read and convert ClustalW alignment
 clustalw_alignment = read_clustalw_alignment(clustalw_output_file)
 clustalw_alignment_list = convert_alignment_to_list(clustalw_alignment)
 
+muscle_alignment = read_muscle_alignment(muscle_output)
+muscle_alignment_list = convert_alignment_to_list(muscle_alignment)
+
+
 # Calculate the SP score for ClustalW alignment
 clustalw_sp_score = calculate_fitness(clustalw_alignment_list)
 print(f"SP Score for ClustalW Alignment: {clustalw_sp_score}")
+
+muscle_sp_score = calculate_fitness(muscle_alignment_list)
+print(f"Fitness Score for MUSCLE Alignment: {muscle_sp_score}")
 
 
 # Fetch sequences from GenBank
