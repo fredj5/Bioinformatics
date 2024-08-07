@@ -69,11 +69,19 @@ def roulette_wheel_selection(population, fitnesses):
     selected_indices = np.random.choice(len(population), size=len(population), p=probabilities)
     return [population[i] for i in selected_indices]
 
-# Crossover
-def crossover(parent1, parent2):
-    point = random.randint(1, len(parent1[0]) - 2)
-    child1 = [p1[:point] + p2[point:] for p1, p2 in zip(parent1, parent2)]
-    child2 = [p2[:point] + p1[point:] for p1, p2 in zip(parent1, parent2)]
+def two_point_crossover(parent1, parent2):
+    # Ensure the chromosomes are non-empty and of the same length
+    if len(parent1[0]) < 2:
+        raise ValueError("Chromosomes must be at least 2 genes long for two-point crossover")
+    
+    # Select two random crossover points
+    point1 = random.randint(1, len(parent1[0]) - 2)
+    point2 = random.randint(point1 + 1, len(parent1[0]) - 1)
+    
+    # Create children by exchanging segments between the crossover points
+    child1 = [p1[:point1] + p2[point1:point2] + p1[point2:] for p1, p2 in zip(parent1, parent2)]
+    child2 = [p2[:point1] + p1[point1:point2] + p2[point2:] for p1, p2 in zip(parent1, parent2)]
+    
     return child1, child2
 
 # Mutation
@@ -112,7 +120,7 @@ def run_genetic_algorithm(sequences, population_size=100, num_generations=1000, 
         
         for i in range(0, len(selected_population) - elite_size, 2):
             parent1, parent2 = selected_population[i], selected_population[i + 1]
-            child1, child2 = crossover(parent1, parent2)
+            child1, child2 = two_point_crossover(parent1, parent2)
             new_population.extend([mutate(child1, mutation_rate), mutate(child2, mutation_rate)])
         
         population = replace_population(population, new_population)
